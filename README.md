@@ -349,6 +349,8 @@ Yes we can automate all the things. Here is the repo I use automating the comple
 
 As we can see, setting up RKE2, Rancher and Longhorn is not that complicated. We can get deploy Kubernetes, a storage layer, and a management gui in a few minutes. Simple, right? One of the added benefits of using the Suse / Rancher stack is that all the pieces are modular. Use only what you need, when you need it. Hope this was helpful. Please feel free reach out, or open any issues at https://github.com/clemenko/rke_install_blog. 
 
+https://www.youtube.com/watch?v=oM-6sd4KSmA
+
 thanks!
 
 ![success](img/success.jpg)
