@@ -1,6 +1,5 @@
 ---
 title: Simple RKE2, Longhorn, and Rancher Install
-author: Andy Clemenko, @clemenko, andy.clemenko@rancherfederal.com
 ---
 
 # Simple RKE2, Longhorn, and Rancher Install
@@ -194,7 +193,7 @@ Quick note about Rancher. Rancher needs jetstack/cert-manager to create the self
 ```bash
 # still on  rancher1
 # add the cert-manager CRD
-kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.6.1/cert-manager.crds.yaml
+kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.11.1/cert-manager.crds.yaml
 
 # helm install jetstack
 helm upgrade -i cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace
@@ -349,8 +348,5 @@ Yes we can automate all the things. Here is the repo I use automating the comple
 
 As we can see, setting up RKE2, Rancher and Longhorn is not that complicated. We can get deploy Kubernetes, a storage layer, and a management gui in a few minutes. Simple, right? One of the added benefits of using the Suse / Rancher stack is that all the pieces are modular. Use only what you need, when you need it. Hope this was helpful. Please feel free reach out, or open any issues at https://github.com/clemenko/rke_install_blog. 
 
-https://www.youtube.com/watch?v=oM-6sd4KSmA
-
 thanks!
 
-![success](img/success.jpg)
