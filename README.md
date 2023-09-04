@@ -1,8 +1,8 @@
 ---
-title: Simple RKE2, Longhorn, and Rancher Install
+title: Simple RKE2, Rancher Multi-Cluster Kubernetes Management and Longhorn Install
 ---
 
-# Simple RKE2, Longhorn, and Rancher Install
+## Simple RKE2, Rancher Multi-Cluster Kubernetes Management and Longhorn Install
 
 ![logp](img/logo_long.jpg)
 
@@ -96,16 +96,27 @@ Let's validate everything worked as expected. Run a `systemctl status rke2-serve
 
 Perfect! Now we can start talking Kubernetes. We need to symlink the `kubectl` cli on `rancher1` that gets installed from RKE2.
 
+**server(s): rancher1**
+
+*simlink all the things - kubectl and containerd*
+     
+    ln -s /var/lib/rancher/rke2/data/v1*/bin/kubectl /usr/bin/kubectl
+    ln -s /var/run/k3s/containerd/containerd.sock /var/run/containerd/containerd.sock
+
+
+*add kubectl conf and Update your paths in bashrc*
 ```bash
-# simlink all the things - kubectl
-ln -s $(find /var/lib/rancher/rke2/data/ -name kubectl) /usr/local/bin/kubectl
+cat << EOF >> ~/.bashrc
+export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
+export PATH=$PATH:/var/lib/rancher/rke2/bin:/usr/local/bin/
+alias k=kubectl
+EOF
+source ~/.bashrc
+```    
+*check node status*
+   
+    kubectl get node -o wide
 
-# add kubectl conf
-export KUBECONFIG=/etc/rancher/rke2/rke2.yaml 
-
-# check node status
-kubectl get node
-```
 
 Hopefully everything looks good! Here is an example.
 
@@ -113,6 +124,24 @@ Hopefully everything looks good! Here is an example.
 
 For those that are not TOO familiar with k8s, the config file is what `kubectl` uses to authenticate to the api service. If you want to use a workstation, jump box, or any other machine you will want to copy `/etc/rancher/rke2/rke2.yaml`. You will want to modify the file to change the ip address. We will need one more file from `rancher1`, aka the server, the agent join token. Copy `/var/lib/rancher/rke2/server/node-token`, we will need it for the agent install.
 
+*Create the RKE2 Directory*
+
+    mkdir -p /etc/rancher/rke2/
+
+*Get node-token*    
+   
+    cat /var/lib/rancher/rke2/server/node-token 
+
+*create RKE2  config  file*  (copy token and replace node-token in the code below)
+```bash
+cat << EOF >> /etc/rancher/rke2/config.yaml
+token: node-token
+EOF
+```
+*check if config is create*
+
+    cat /etc/rancher/rke2/config.yaml
+    
 Side note on Tokens. RKE2 uses the TOKEN as a way to authenticate the agent to the server service. This is a much better system than "trust on first use". The goal of the token process is to setup a control plane Mutual TLS (mtls) certificate termination.
 
 ### RKE2 Agent Install
