@@ -47,9 +47,9 @@ For the sake of this guide we are going to use [Ubuntu](https://ubuntu.com). Our
 
 | name | ip | memory | core | disk | os | kernel |
 |---| --- | --- | --- | --- | --- | --- |
-|rancher1| 142.93.189.52  | 64 GB | 12 | 1.2 TB | Ubuntu 22.04.3 x64 | 6.2.0-31-generic HWE |
-|rancher2| 68.183.150.214 | 64 GB | 12 | 1.2 TB | Ubuntu 22.04.3 x64 | 6.2.0-31-generic HWE |
-|rancher3| 167.71.188.101 | 64 GB | 12 | 1.2 TB | Ubuntu 22.04.3 x64 | 6.2.0-31-generic HWE |
+|rke-cp-1| 142.93.189.52  | 64 GB | 12 | 1.2 TB | Ubuntu 22.04.3 x64 | 6.2.0-31-generic HWE |
+|rke wk1| 68.183.150.214 | 64 GB | 12 | 1.2 TB | Ubuntu 22.04.3 x64 | 6.2.0-31-generic HWE |
+|rke-wk2| 167.71.188.101 | 64 GB | 12 | 1.2 TB | Ubuntu 22.04.3 x64 | 6.2.0-31-generic HWE |
 
 
 For Kubernetes we will need to "set" one of the nodes as the control plane. Rancher1 looks like a winner for this. First we need to `ssh` into all three nodes and make sure we have all the updates and add a few things. For the record I am not a fan of software firewalls. Please feel free to reach to me to discuss.
@@ -77,7 +77,7 @@ to stop the software firewall*
 Now that we have all the nodes up to date, let's focus on `rancher1`. While this might seem controversial, `curl | bash` does work nicely. The install script will use the tarball install for **Ubuntu**. Please be patient, the start command can take a minute. Here are the [rke2 docs](https://docs.rke2.io/install/methods/)
 
 
-*On rancher1*
+**On rke-cp-1**
   
     curl -sfL https://get.rke2.io | INSTALL_RKE2_CHANNEL=v1.26 INSTALL_RKE2_TYPE=server sh - 
 
@@ -96,7 +96,7 @@ Let's validate everything worked as expected. Run a `systemctl status rke2-serve
 
 Perfect! Now we can start talking Kubernetes. We need to symlink the `kubectl` cli on `rancher1` that gets installed from RKE2.
 
-**server(s): rancher1**
+**server(s): rke-cp-1**
 
 *simlink all the things - kubectl and containerd*
      
@@ -146,30 +146,39 @@ Side note on Tokens. RKE2 uses the TOKEN as a way to authenticate the agent to t
 
 ### RKE2 Agent Install
 
-The agent install is VERY similar to the server install. Except that we need an agent config file before starting. We will start with `rancher2`. We need to install the agent and setup the configuration file.
+The agent install is VERY similar to the server install. Except that we need an agent config file before starting.  We will start with  `rke-wk1` and `rke-wk2`. We need to install the and setup the configuration file.
 
+**On server(s): rke-wk1 and rke-wk2**
+*create config file*
+
+    mkdir -p /etc/rancher/rke2/ 
+
+*change the ip to reflect your rke-cp-1 ip* and
+*change the Token to the one from rke-cp-1 /var/lib/rancher/rke2/server/node-token* 
 ```bash
-# we add INSTALL_RKE2_TYPE=agent
-curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE=agent sh -  
-
-# create config file
-mkdir -p /etc/rancher/rke2/ 
-
-# change the ip to reflect your rancher1 ip
-echo "server: https://$RANCHER1_IP:9345" > /etc/rancher/rke2/config.yaml
-
-# change the Token to the one from rancher1 /var/lib/rancher/rke2/server/node-token 
-echo "token: $TOKEN" >> /etc/rancher/rke2/config.yaml
-
-# enable and start
-systemctl enable --now rke2-agent.service
+cat << EOF >> /etc/rancher/rke2/config.yaml
+server: https://$RKE-CP-1_IP:9345
+token: node-token
+EOF
 ```
+*Check the configuration file is good*
+
+     cat /etc/rancher/rke2/config.yaml
+
+*we add INSTALL_RKE2_TYPE=agent*
+   
+    curl -sfL https://get.rke2.io | INSTALL_RKE2_CHANNEL=v1.26 INSTALL_RKE2_TYPE=agent sh -
+
+*enable and start*
+     
+    systemctl enable rke2-agent.service && systemctl start rke2-agent.service
+
 
 What should this look like:
 
 ![rke_agent](img/rke_agent.jpg)
 
-Rinse and repeat. Run the same install commands on `rancher3`. Next we can validate all the nodes are playing nice by running `kubectl get node -o wide` on `rancher1`. 
+Rinse and repeat. Run the same install commands on `rke-wk2`and others worker nodes. Next we can validate all the nodes are playing nice by running `kubectl get node -o wide` on `rke-cp-1`. 
 
 ![moar_nodes](img/moar_nodes.jpg)
 
