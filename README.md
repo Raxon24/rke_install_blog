@@ -20,7 +20,6 @@ Or [Watch the video](https://youtu.be/oM-6sd4KSmA).
 
 > **Table of Contents**:
 >
-> * [Whoami](#whoami)
 > * [Prerequisites](#prerequisites)
 > * [Linux Servers](#linux-servers)
 > * [RKE2 Install](#rke2-install)
@@ -37,78 +36,55 @@ Or [Watch the video](https://youtu.be/oM-6sd4KSmA).
 
 ---
 
-## Whoami
-
-Just a geek - Andy Clemenko - @clemenko - andy.clemenko@rancherfederal.com
 
 ## Prerequisites
 
-The prerequisites are fairly simple. We need 3 linux servers with access to the internet. They can be bare metal, or in the cloud provider of your choice. I prefer [Digital Ocean](https://digitalocean.com). We need an `ssh` client to connect to the servers. And finally DNS to make things simple. Ideally we need a URL for the Rancher interface. For the purpose of the this guide let's use `rancher.dockr.life`. We will need to point that name to the first server of the cluster. While we are at it, a wildcard DNS for your domain will help as well.
+The prerequisites are fairly simple. We need 3 linux servers with access to the internet. They can be bare metal, or in the cloud provider of your choice. I prefer [ssdnodes](https://ssdnodes.com). We need an `ssh` client to connect to the servers. And finally DNS to make things simple. Ideally we need a URL for the Rancher interface. For the purpose of the this guide let's use `rancher.dockr.life`. We will need to point that name to the first server of the cluster. While we are at it, a wildcard DNS for your domain will help as well.
 
 ## Linux Servers
 
-For the sake of this guide we are going to use [Ubuntu](https://ubuntu.com). Our goal is a simple deployment. The recommended size of each node is 4 Cores and 8GB of memory with at least 60GB of storage. One of the nice things about [Longhorn](https://longhorn.io) is that we do not need to attach additional storage. Here is an example list of servers. Please keep in mind that your server names can be anything. Just keep in mind which ones are the "server" and "agents".
+For the sake of this guide we are going to use [Ubuntu](https://ubuntu.com). Our goal is a simple deployment. The recommended size of each node is 12 Cores and 64GB of memory with at least 1.2TB of storage. One of the nice things about [Longhorn](https://longhorn.io) is that we do not need to attach additional storage. Here is an example list of servers. Please keep in mind that your server names can be anything. Just keep in mind which ones are the "server" and "agents".
 
-| name | ip | memory | core | disk | os |
-|---| --- | --- | --- | --- | --- |
-|rancher1| 142.93.189.52  | 8192 | 4 | 160 | Ubuntu 21.10 x64 |
-|rancher2| 68.183.150.214 | 8192 | 4 | 160 | Ubuntu 21.10 x64 |
-|rancher3| 167.71.188.101 | 8192 | 4 | 160 | Ubuntu 21.10 x64 |
+| name | ip | memory | core | disk | os | kernel |
+|---| --- | --- | --- | --- | --- | --- |
+|rancher1| 142.93.189.52  | 64 GB | 12 | 1.2 TB | Ubuntu 22.04.3 x64 | 6.2.0-31-generic HWE |
+|rancher2| 68.183.150.214 | 64 GB | 12 | 1.2 TB | Ubuntu 22.04.3 x64 | 6.2.0-31-generic HWE |
+|rancher3| 167.71.188.101 | 64 GB | 12 | 1.2 TB | Ubuntu 22.04.3 x64 | 6.2.0-31-generic HWE |
 
 
-For Kubernetes we will need to "set" one of the nodes as the control plane. Rancher1 looks like a winner for this. First we need to `ssh` into all three nodes and make sure we have all the updates and add a few things. For the record I am not a fan of software firewalls. Please feel free to reach to me to discuss. :D
+For Kubernetes we will need to "set" one of the nodes as the control plane. Rancher1 looks like a winner for this. First we need to `ssh` into all three nodes and make sure we have all the updates and add a few things. For the record I am not a fan of software firewalls. Please feel free to reach to me to discuss.
 
-**Ubuntu**:
+## *Ubuntu*:
 
-```bash
-# Ubuntu instructions 
-# stop the software firewall
-systemctl disable --now ufw
+*Ubuntu instructions
+to stop the software firewall*
 
-# get updates, install nfs, and apply
-apt update
-apt install nfs-common -y  
-apt upgrade -y
+    systemctl disable --now ufw
+*get updates and install Requirements, and apply*
 
-# clean up
-apt autoremove -y
-```
+    apt update && apt install nfs-common -y && apt upgrade -y
 
-**Rocky / Centos / RHEL**:
+*clean up*
+    
+    apt autoremove -y
 
-```bash
-# Rocky instructions 
-# stop the software firewall
-systemctl disable --now firewalld
-
-# get updates, install nfs, and apply
-yum install -y nfs-utils cryptsetup iscsi-initiator-utils
-
-# enable iscsi for Longhorn
-systemctl enable --now iscsid.service 
-
-# update all the things
-yum update -y
-
-# clean up
-yum clean all
-```
-
-Cool, lets move on to the RKE2.
+**Cool, lets move on to the RKE2.**
 
 ## RKE2 Install
 
 ### RKE2 Server Install
 
-Now that we have all the nodes up to date, let's focus on `rancher1`. While this might seem controversial, `curl | bash` does work nicely. The install script will use the tarball install for **Ubuntu** and the RPM install for **Rocky/Centos**. Please be patient, the start command can take a minute. Here are the [rke2 docs](https://docs.rke2.io/install/methods/) and [install options](https://docs.rke2.io/install/install_options/install_options/) for reference.
+Now that we have all the nodes up to date, let's focus on `rancher1`. While this might seem controversial, `curl | bash` does work nicely. The install script will use the tarball install for **Ubuntu**. Please be patient, the start command can take a minute. Here are the [rke2 docs](https://docs.rke2.io/install/methods/)
 
-```bash
-# On rancher1
-curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE=server sh - 
 
-# start and enable for restarts - 
-systemctl enable --now rke2-server.service
-```
+*On rancher1*
+  
+    curl -sfL https://get.rke2.io | INSTALL_RKE2_CHANNEL=v1.26 INSTALL_RKE2_TYPE=server sh - 
+
+*start and enable rke2 service*
+     
+    systemctl enable rke2-server.service && systemctl start rke2-server.service
+
 
 Here is what the **Ubuntu** version should look like:
 
